@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
-import './App.css';
+import "./App.css";
+import React from "react";
 
 function App() {
   const [question, setQuestion] = useState("");
@@ -13,13 +14,20 @@ function App() {
     setAnswer("");
     setError("");
     try {
-      const response = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyC6QaRjb52-nl9AF5idJKCjNJs7LsV4YMc",
-        {
-          contents: [{ parts: [{ text: question }] }],
-        }
-      );
-
+      // Use apiKey in your API request
+      const response = await axios({
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${
+          import.meta.env.REACT_APP_GEMINI_API_KEY
+        }`,
+        method: "post",
+        data: {
+          contents: [
+            {
+              parts: [{ text: question }],
+            },
+          ],
+        },
+      });
       if (
         response.data &&
         response.data.candidates &&
@@ -31,9 +39,19 @@ function App() {
       }
     } catch (error) {
       console.error("Error generating answer:", error);
-      setError("Error generating answer. Please try again later.");
-    } finally {
-      setLoading(false);
+      // Handle specific error cases, e.g., network error, server error
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Server responded with an error:", error.response.data);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("No response received:", error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Error setting up the request:", error.message);
+      }
+      setAnswer("Error generating answer. Please try again later.");
     }
   }
 
@@ -58,9 +76,7 @@ function App() {
         {loading ? "Generating..." : "Generate Answer"}
       </button>
 
-      {error && (
-        <p className="text-red-500 mt-4 text-sm">{error}</p>
-      )}
+      {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
 
       {answer && (
         <div className="mt-6 max-w-4xl bg-white shadow-md rounded-lg overflow-hidden transition duration-300 transform hover:scale-105">
